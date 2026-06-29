@@ -1,0 +1,8 @@
+# Everything is text unless otherwise specified
+* text=auto
+
+# Ensure scripts are LF
+*.sh text eol=lf
+
+# Normalize line-endings and give Markdown diff hints
+*.md text eol=lf diff=markdown

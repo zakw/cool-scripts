@@ -1,0 +1,11 @@
+version = 1
+
+[[annotations]]
+path = [
+    ".gitattributes",
+    ".gitignore",
+    ".neat",
+    "REUSE.toml",
+]
+SPDX-FileCopyrightText = "Copyright (c) Zak Whaley"
+SPDX-License-Identifier = "MIT-0"

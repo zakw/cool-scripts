@@ -1,0 +1,2 @@
+# Don't blow away our local .neat keep lists!
+/*.neat-*
