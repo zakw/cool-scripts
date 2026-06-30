@@ -1,8 +1,8 @@
-# Everything is text unless otherwise specified
+# Normalize line endings for all files detected as text (fallback)
 * text=auto
 
 # Ensure scripts are LF
 *.sh text eol=lf
 
-# Normalize line-endings and give Markdown diff hints
+# Normalize line endings and give Markdown diff hints
 *.md text eol=lf diff=markdown
