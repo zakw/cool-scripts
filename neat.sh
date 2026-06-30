@@ -52,6 +52,8 @@ addKeepPattern(){
 
 while [[ $# -gt 0 ]]; do
     parameter="$1"
+    shift 1
+
     case "$parameter" in
         -h|--help)
             usage
@@ -59,15 +61,12 @@ while [[ $# -gt 0 ]]; do
             ;;
         -n|--dry-run)
             dryRun="true"
-            shift 1
             ;;
         -u|--Untracked)
             keepUntracked="false"
-            shift 1
             ;;
         -f|--force)
             force="true"
-            shift 1
             ;;
         -k|--keep)
             if [[ -z "$2" ]]; then
@@ -75,16 +74,15 @@ while [[ $# -gt 0 ]]; do
                 usage
                 exit 1
             fi
+
             addKeepPattern keepPatternsAdditional "$2"
-            shift 2
+            shift 1
             ;;
         -s|--show-command)
             showCommand="true"
-            shift 1
           ;;
         -l|--list-patterns)
             listPatterns="true"
-            shift 1
             ;;
         *)
             echo "Error: Unknown option \"$parameter\"" >&2
