@@ -167,7 +167,13 @@ if [[ "$dryRun" == "true" ]]; then
     exit 0
 # Ask the user if this looks good before proceeding
 elif [[ "$force" != "true" ]]; then
-    cleanWithFlags "${gitFlags}n" "$showCommand" "${keepPatternArgs[@]}"
+    # Print our dry run to the terminal and capture output
+    output=$(cleanWithFlags "${gitFlags}n" "$showCommand" "${keepPatternArgs[@]}" | tee /dev/tty)
+
+    # Nothing to clean if there was no output
+    if [[ -z "$output" ]]; then
+        exit 0
+    fi
 
     while true; do
         read -p "Continue to clean? [y/N] " response
