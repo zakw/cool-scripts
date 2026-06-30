@@ -71,7 +71,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         -k|--keep)
             if [[ -z "$2" ]]; then
-                echo "Error: \"$parameter\" requires a value."
+                echo "Error: \"$parameter\" requires a value." >&2
                 usage
                 exit 1
             fi
