@@ -138,7 +138,8 @@ getSegmentsFromPattern(){
 
 # Expand our patterns into their final form
 keepPatternsProcessed=()
-keepDirectoryPatterns=()
+keepPatternsDirectoryAncestry=()
+recreateDirectoryPatterns=()
 for keepPattern in "${keepPatternsCombined[@]}"; do
     # Typical path for normal patterns without "f:" or "d:" prefixes
     if [[ "$keepPattern" != *:* ]]; then
@@ -184,20 +185,23 @@ for keepPattern in "${keepPatternsCombined[@]}"; do
         # Trim trailing '/' because find will fail on it otherwise
         extracted="${extracted%/}"
 
-        keepDirectoryPatterns+=("$dirPrefix$extracted")
+        recreateDirectoryPatterns+=("$dirPrefix$extracted")
     else
         echo "Error: Unknown prefix \"$prefix\"" >&2
         exit 1
     fi
 
-    negation=""
-    if [[ "$keepUntracked" == "true" ]]; then
-        negation="!"
+    # In the -x variant, the normal expressions should be sufficient
+    if [[ "$keepUntracked" == "false" ]]; then
+        keepPatternsProcessed+=("$extracted")
+        continue
     fi
 
+    # Alternatively include and exclude our ancestry hierarchy to rebuild the path to our desired keep item
+    negation="!"
     rebuiltPath=""
     for s in "${extractedSegments[@]}"; do
-        keepPatternsProcessed+=("$negation$rebuiltPath$s")
+        keepPatternsDirectoryAncestry+=("$negation$rebuiltPath$s")
         rebuiltPath="$rebuiltPath$s"
 
         if [[ "$negation" == "!" ]]; then
@@ -221,6 +225,10 @@ fi
 keepPatternArgs=()
 for keepPattern in "${keepPatternsProcessed[@]}"; do
     keepPatternArgs+=(-e "$excludeNegationFlag$keepPattern")
+done
+
+for keepPattern in "${keepPatternsDirectoryAncestry[@]}"; do
+    keepPatternArgs+=(-e "$keepPattern")
 done
 
 cleanWithFlags(){
@@ -249,7 +257,7 @@ cleanWithFlags(){
 # Capture any directories that will be cleaned that we want to remain
 keepDirectories=()
 repoRoot=$(git rev-parse --show-toplevel)
-for dirPattern in "${keepDirectoryPatterns[@]}"; do
+for dirPattern in "${recreateDirectoryPatterns[@]}"; do
     echo "dirPattern=\"$dirPattern\""
     keepDirs=()
     readarray -d '' keepDirs < <(find "$repoRoot" -type d -path "$dirPattern" -print0)
