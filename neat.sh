@@ -157,16 +157,18 @@ cleanWithFlags(){
     )
 }
 
-# If a dry-run was requested, we're finished
+forceFlags="${gitFlags}ff"
+dryRunFlags="${forceFlags}n" # We want to dry run what we'd force through
+
+# If a dry-run was requested, we're finished after we print
 if [[ "$dryRun" == "true" ]]; then
-    # Add git clean's dry-run flag to do a dry-run first
-    cleanWithFlags "${gitFlags}n" "$showCommand" "${keepPatternArgs[@]}"
+    cleanWithFlags "$dryRunFlags" "$showCommand" "${keepPatternArgs[@]}"
 
     exit 0
 # Ask the user if this looks good before proceeding
 elif [[ "$force" != "true" ]]; then
     # Print our dry run to the terminal and capture output
-    output=$(cleanWithFlags "${gitFlags}n" "$showCommand" "${keepPatternArgs[@]}" | tee /dev/tty)
+    output=$(cleanWithFlags "$dryRunFlags" "$showCommand" "${keepPatternArgs[@]}" | tee /dev/tty)
 
     # Nothing to clean if there was no output
     if [[ -z "$output" ]]; then
@@ -189,7 +191,9 @@ elif [[ "$force" != "true" ]]; then
                 ;;
         esac
     done
+# Otherwise, we're just advancing straight to forcing with no output
+#else
 fi
 
 # Add git clean's force flags (two "f"s descend into submodules, too)
-cleanWithFlags "${gitFlags}ff" "$showCommand" "${keepPatternArgs[@]}"
+cleanWithFlags "$forceFlags" "$showCommand" "${keepPatternArgs[@]}"
