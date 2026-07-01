@@ -13,7 +13,7 @@ usage(){
 
 dryRun="false"
 keepUntracked="true"
-keepPatternsAdditional=()
+keepPatternsCLI=()
 showCommand="false"
 listPatterns="false"
 force="false"
@@ -43,11 +43,6 @@ addKeepPattern(){
 
     # Register our pattern
     out_keepPatternList+=("$keepPattern")
-
-    # If we add a folder, add all sub-directories, too
-    if [[ "$keepPattern" == */ ]]; then
-        out_keepPatternList+=("$keepPattern**")
-    fi
 }
 
 while [[ $# -gt 0 ]]; do
@@ -75,7 +70,7 @@ while [[ $# -gt 0 ]]; do
                 exit 1
             fi
 
-            addKeepPattern keepPatternsAdditional "$1"
+            addKeepPattern keepPatternsCLI "$1"
             shift 1
             ;;
         -s|--show-command)
@@ -109,7 +104,7 @@ for keepFile in .neat*; do
 done
 
 # Append our command-line patterns so the file patterns are evaluated first
-keepPatternsCombined+=("${keepPatternsAdditional[@]}")
+keepPatternsCombined+=("${keepPatternsCLI[@]}")
 
 if [[ "$listPatterns" == "true" ]]; then
     for keepPattern in "${keepPatternsCombined[@]}"; do
@@ -118,6 +113,83 @@ if [[ "$listPatterns" == "true" ]]; then
 
     exit 0
 fi
+
+getSegmentsFromPattern(){
+    local -n out_segments="${1:?"Error: Must supply output segment list"}"
+    local pattern="${2:?"Error: Must supply pattern"}"
+
+    local segments
+    IFS='/' read -r -a segments <<< "$pattern"
+
+    out_segments=()
+    local firstItem="true"
+    for s in "${segments[@]}"; do
+        if [[ "$firstItem" == "true" ]]; then
+            # Don't add an empty entry if the first item was '/'
+            if [[ -n "$s" ]]; then
+                out_segments+=("$s")
+            fi
+            firstItem="false"
+        else
+            out_segments+=("/$s")
+        fi
+    done;
+}
+
+# Expand our patterns into their final form
+keepPatternsProcessed=()
+keepDirectories=()
+for keepPattern in "${keepPatternsCombined[@]}"; do
+    # Typical path for normal patterns without "f:" or "d:" prefixes
+    if [[ "$keepPattern" != *:* ]]; then
+        keepPatternsProcessed+=("$keepPattern")
+
+        # If we add a folder, add all sub-directories, too
+        if [[ "$keepPattern" == */ ]]; then
+            keepPatternsProcessed+=("$keepPattern**")
+        fi
+
+        continue
+    fi
+
+    # Special cases for "f:" and "d:" prefixes
+    IFS=':' read -r prefix extracted <<< "$keepPattern"
+    
+    if [[ -z "$extracted" ]]; then
+        echo "Error: Empty pattern for prefix \"$prefix\"" >&2
+        exit 1
+    fi
+
+    extractedSegments=()
+    getSegmentsFromPattern extractedSegments "$extracted"
+
+    if [[ "$prefix" == "f" ]]; then
+        echo "File: $extracted -> ${extractedSegments[*]}"
+    elif [[ "$prefix" == "d" ]]; then
+        echo "Folder: $extracted -> ${extractedSegments[*]}"
+        keepDirectories+=("${extracted#*(/)}")
+    else
+        echo "Error: Unknown prefix \"$prefix\"" >&2
+        exit 1
+    fi
+
+    negation=""
+    if [[ "$keepUntracked" == "true" ]]; then
+        negation="!"
+    fi
+
+    rebuiltPath=""
+    for s in "${extractedSegments[@]}"; do
+        keepPatternsProcessed+=("$negation$rebuiltPath$s")
+        rebuiltPath="$rebuiltPath$s"
+
+        if [[ "$negation" == "!" ]]; then
+            negation=""
+        else
+            negation="!"
+        fi
+    done
+done
 
 # With "X", all ignored files are deleted so we negate its exclusion to treat it as "not ignored"
 gitFlags=-Xd
@@ -130,7 +202,7 @@ fi
 
 # Build our exclusion list of things to keep
 keepPatternArgs=()
-for keepPattern in "${keepPatternsCombined[@]}"; do
+for keepPattern in "${keepPatternsProcessed[@]}"; do
     keepPatternArgs+=(-e "$excludeNegationFlag$keepPattern")
 done
 

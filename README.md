@@ -52,16 +52,27 @@ As a byproduct of how `neat` works, if you add `/.neat-*` to both your `.gitigno
 have local `neat` user rules just for you in files named like `.neat-local` and `.neat-userName` which will persist
 across `neat` invocations.
 
-`.gitignore`
+`.gitignore`:
 ```
 # Don't commit our local .neat keep lists!
 /.neat-*
 ```
 
-`.neat`
+`.neat`:
 ```
 # Don't blow away our local .neat keep lists!
 /.neat-*
+```
+
+### Tips
+#### Keep a directory, but not its contents
+Add each directory along the way and skip adding a `/` or `/**`. This can be useful if, say, you have a configure-time
+step that creates a folder that a build-time step is dependent on.
+`.neat`:
+```
+out
+out/build
+out/build/Debug
 ```
 
 # Installation
