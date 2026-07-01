@@ -180,26 +180,26 @@ for keepPattern in "${keepPatternsCombined[@]}"; do
             dirPrefix="$repoRoot/"
         fi
 
-        echo "1: $extracted"
+        #echo "1: $extracted"
 
         # Trim leading '/' that indicates top-of-repo so that we don't try to
         # create a directory in the root of the filesystem.
         extracted="${extracted#/}"
 
 
-        echo "2: $extracted"
+        #echo "2: $extracted"
 
         # Trim trailing '/' because find will fail on it otherwise
         extracted="${extracted%/}"
 
-        echo "3: $extracted"
+        #echo "3: $extracted"
 
         if [[ -z "$extracted" ]]; then
             echo "Error: Empty pattern \"$extracted\"" >&2
             exit 1
         fi
 
-        echo "4: $dirPrefix$extracted"
+        #echo "4: $dirPrefix$extracted"
 
         recreateDirectoryPatterns+=("$dirPrefix$extracted")
     else
@@ -286,20 +286,16 @@ for dirPattern in "${recreateDirectoryPatterns[@]}"; do
     keepDirectories+=("${keepDirs[@]}")
 done
 
-#echo "keepDirectories -> ${keepDirectories[*]}"
-
-# Recreate any directories that no longer exist
-for d in "${keepDirectories[@]}"; do
-    echo "Would recreate \"$d\""
-    #mkdir -p "$d"
-done
-
 forceFlags="${gitFlags}ff"
 dryRunFlags="${forceFlags}n" # We want to dry run what we'd force through
 
 # If a dry-run was requested, we're finished after we print
 if [[ "$dryRun" == "true" ]]; then
     cleanWithFlags "$dryRunFlags" "$showCommand" "${keepPatternArgs[@]}"
+
+    for d in "${keepDirectories[@]}"; do
+        echo "Would recreate \"$d\""
+    done
 
     exit 0
 # Ask the user if this looks good before proceeding
@@ -311,6 +307,10 @@ elif [[ "$force" != "true" ]]; then
     if [[ -z "$output" ]]; then
         exit 0
     fi
+
+    for d in "${keepDirectories[@]}"; do
+        echo "Would recreate \"$d\""
+    done
 
     while true; do
         read -p "Continue to clean? [y/N] " response
@@ -338,6 +338,6 @@ cleanWithFlags "$forceFlags" "$showCommand" "${keepPatternArgs[@]}"
 
 # Recreate any directories that no longer exist
 for d in "${keepDirectories[@]}"; do
-    echo "Would recreate \"$d\""
-    #mkdir -p "$d"
+    echo "Recreating \"$d\""
+    mkdir -p "$d"
 done
