@@ -69,13 +69,13 @@ while [[ $# -gt 0 ]]; do
             force="true"
             ;;
         -k|--keep)
-            if [[ -z "$2" ]]; then
+            if [[ -z "$1" ]]; then
                 echo "Error: \"$parameter\" requires a value." >&2
                 usage
                 exit 1
             fi
 
-            addKeepPattern keepPatternsAdditional "$2"
+            addKeepPattern keepPatternsAdditional "$1"
             shift 1
             ;;
         -s|--show-command)
