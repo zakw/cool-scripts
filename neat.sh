@@ -87,6 +87,10 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Move to the top of our repo so all operations happen relative to that
+repoRoot=$(git rev-parse --show-toplevel)
+cd $repoRoot
+
 # Aggregate multiple "keep" lists so local users can have their own
 keepPatternsCombined=()
 for keepFile in .neat*; do
@@ -136,8 +140,6 @@ getSegmentsFromPattern(){
     done;
 }
 
-repoRoot=$(git rev-parse --show-toplevel)
-
 # Expand our patterns into their final form
 keepPatternsProcessed=()
 keepPatternsDirectoryAncestry=()
@@ -174,10 +176,10 @@ for keepPattern in "${keepPatternsCombined[@]}"; do
         #echo "Folder: $extracted -> ${extractedSegments[*]}"
 
         # For find, try to match everything from here by default
-        dirPrefix="$repoRoot/*"
+        dirPrefix="./*"
         if [[ "$extracted" == /* ]]; then
             # Add this for find so only patterns starting in the repo root match
-            dirPrefix="$repoRoot/"
+            dirPrefix="./"
         fi
 
         #echo "1: $extracted"
@@ -282,8 +284,10 @@ keepDirectories=()
 for dirPattern in "${recreateDirectoryPatterns[@]}"; do
     echo "dirPattern=\"$dirPattern\""
     keepDirs=()
-    readarray -d '' keepDirs < <(find "$repoRoot" -type d -path "$dirPattern" -print0)
-    keepDirectories+=("${keepDirs[@]}")
+    readarray -d '' keepDirs < <(find . -type d -path "$dirPattern" -print0)
+
+    # Trim the './' from all results
+    keepDirectories+=("${keepDirs[@]#./}")
 done
 
 forceFlags="${gitFlags}ff"
