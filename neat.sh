@@ -164,13 +164,26 @@ for keepPattern in "${keepPatternsCombined[@]}"; do
     getSegmentsFromPattern extractedSegments "$extracted"
 
     if [[ "$prefix" == "f" ]]; then
-        echo "File: $extracted -> ${extractedSegments[*]}"
+        #echo "File: $extracted -> ${extractedSegments[*]}"
+        :
     elif [[ "$prefix" == "d" ]]; then
-        echo "Folder: $extracted -> ${extractedSegments[*]}"
+
+        #echo "Folder: $extracted -> ${extractedSegments[*]}"
+
+        dirPrefix=""
+        if [[ "$extracted" == /* ]]; then
+            # Add this for find so only patterns starting in the repo root match
+            dirPrefix="./"
+        fi
 
         # Trim leading '/' that indicates top-of-repo so that we don't try to
         # create a directory in the root of the filesystem.
-        keepDirectoryPatterns+=("${extracted#*(/)}")
+        extracted="${extracted#/}"
+
+        # Trim trailing '/' because find will fail on it otherwise
+        extracted="${extracted%/}"
+
+        keepDirectoryPatterns+=("$dirPrefix$extracted")
     else
         echo "Error: Unknown prefix \"$prefix\"" >&2
         exit 1
@@ -232,6 +245,22 @@ cleanWithFlags(){
     )
 }
 
+# Capture any directories that will be cleaned that we want to remain
+keepDirectories=()
+repoRoot=$(git rev-parse --show-toplevel)
+for dirPattern in "${keepDirectoryPatterns[@]}"; do
+    #echo "dirPattern=\"$dirPattern\""
+    keepDirs=()
+    readarray -d '' keepDirs < <(find "$repoRoot" -type d -path "$dirPattern" -print0)
+    keepDirectories+=("${keepDirs[@]}")
+done
+
+# Recreate any directories that no longer exist
+for d in "${keepDirectories[@]}"; do
+    echo "Would recreate \"$d\""
+    #mkdir -p "$d"
+done
+
 forceFlags="${gitFlags}ff"
 dryRunFlags="${forceFlags}n" # We want to dry run what we'd force through
 
@@ -268,15 +297,8 @@ elif [[ "$force" != "true" ]]; then
     done
 # Otherwise, we're just advancing straight to forcing with no output
 #else
+#    :
 fi
-
-# Capture any directories that will be cleaned that we want to remain
-keepDirectories=()
-repoRoot=$(git rev-parse --show-toplevel)
-for dirPattern in "${keepDirectoryPatterns[@]}"; do
-
-    readarray -d '' keepDirectories < <(find "$repoRoot" -type d -name "$dirPattern")
-done
 
 # Add git clean's force flags (two "f"s descend into submodules, too)
 cleanWithFlags "$forceFlags" "$showCommand" "${keepPatternArgs[@]}"
