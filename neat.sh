@@ -186,24 +186,24 @@ for keepPattern in "${keepPatternsCombined[@]}"; do
 
         # Trim leading '/' that indicates top-of-repo so that we don't try to
         # create a directory in the root of the filesystem.
-        extracted="${extracted#/}"
+        trimmed="${extracted#/}"
 
 
-        #echo "2: $extracted"
+        #echo "2: $trimmed"
 
         # Trim trailing '/' because find will fail on it otherwise
-        extracted="${extracted%/}"
+        trimmed="${trimmed%/}"
 
-        #echo "3: $extracted"
+        #echo "3: $trimmed"
 
-        if [[ -z "$extracted" ]]; then
-            echo "Error: Empty pattern \"$extracted\"" >&2
+        if [[ -z "$trimmed" ]]; then
+            echo "Error: Empty pattern \"$trimmed\"" >&2
             exit 1
         fi
 
-        #echo "4: $dirPrefix$extracted"
+        #echo "4: $dirPrefix$trimmed"
 
-        recreateDirectoryPatterns+=("$dirPrefix$extracted")
+        recreateDirectoryPatterns+=("$dirPrefix$trimmed")
     else
         echo "Error: Unknown prefix \"$prefix\"" >&2
         exit 1
@@ -226,6 +226,7 @@ for keepPattern in "${keepPatternsCombined[@]}"; do
         if [[ "$rebuiltPath$s" == "$extracted" ]]; then
             # ... if it's a folder we either keep just the folder, or all its contents
             if [[ "$prefix" == "d" ]]; then
+                #echo "ZAK FOLDER: $extracted"
                 if [[ "$extracted" == */ ]]; then
                     # Preserve all children
                     keepPatternsDirectoryAncestry+=("!$rebuiltPath$s/**")
@@ -236,9 +237,10 @@ for keepPattern in "${keepPatternsCombined[@]}"; do
             # ... and if it's a file we don't need to add another rule
             #else
             #    :
+            #    echo "ZAK FILE: $extracted"
             fi
 
-            #echo "ZAK DONE"
+            #echo "ZAK DONE $extracted"
             break
         fi
 
@@ -246,6 +248,8 @@ for keepPattern in "${keepPatternsCombined[@]}"; do
         keepPatternsDirectoryAncestry+=("$rebuiltPath$s/*")
 
         rebuiltPath="$rebuiltPath$s"
+
+        #echo "$rebuiltPath <- $extracted"
     done
 done
 
@@ -294,7 +298,7 @@ cleanWithFlags(){
 # Capture any directories that will be cleaned that we want to remain
 keepDirectories=()
 for dirPattern in "${recreateDirectoryPatterns[@]}"; do
-    echo "dirPattern=\"$dirPattern\""
+    #echo "dirPattern=\"$dirPattern\""
     keepDirs=()
     readarray -d '' keepDirs < <(find . -type d -path "$dirPattern" -print0)
 
