@@ -136,6 +136,8 @@ getSegmentsFromPattern(){
     done;
 }
 
+repoRoot=$(git rev-parse --show-toplevel)
+
 # Expand our patterns into their final form
 keepPatternsProcessed=()
 keepPatternsDirectoryAncestry=()
@@ -178,17 +180,26 @@ for keepPattern in "${keepPatternsCombined[@]}"; do
             dirPrefix="$repoRoot/"
         fi
 
+        echo "1: $extracted"
+
         # Trim leading '/' that indicates top-of-repo so that we don't try to
         # create a directory in the root of the filesystem.
         extracted="${extracted#/}"
 
+
+        echo "2: $extracted"
+
         # Trim trailing '/' because find will fail on it otherwise
         extracted="${extracted%/}"
+
+        echo "3: $extracted"
 
         if [[ -z "$extracted" ]]; then
             echo "Error: Empty pattern \"$extracted\"" >&2
             exit 1
         fi
+
+        echo "4: $dirPrefix$extracted"
 
         recreateDirectoryPatterns+=("$dirPrefix$extracted")
     else
@@ -268,7 +279,6 @@ cleanWithFlags(){
 
 # Capture any directories that will be cleaned that we want to remain
 keepDirectories=()
-repoRoot=$(git rev-parse --show-toplevel)
 for dirPattern in "${recreateDirectoryPatterns[@]}"; do
     echo "dirPattern=\"$dirPattern\""
     keepDirs=()
