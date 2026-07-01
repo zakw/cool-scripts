@@ -222,12 +222,24 @@ for keepPattern in "${keepPatternsCombined[@]}"; do
         # Unignore this folder
         keepPatternsDirectoryAncestry+=("!$rebuiltPath$s")
 
-        # If this is a file and we've reconstructed the whole path, we don't need to add a rule for non-existant children
-        if [[ "$prefix" == "f" ]]; then
-            if [[ "$rebuiltPath$s" == "$extracted" ]]; then
-                #echo "ZAK DONE"
-                break
+        # If this we've reconstructed the whole path...
+        if [[ "$rebuiltPath$s" == "$extracted" ]]; then
+            # ... if it's a folder we either keep just the folder, or all its contents
+            if [[ "$prefix" == "d" ]]; then
+                if [[ "$extracted" == */ ]]; then
+                    # Preserve all children
+                    keepPatternsDirectoryAncestry+=("!$rebuiltPath$s/**")
+                else
+                    # Destroy all children
+                    keepPatternsDirectoryAncestry+=("$rebuiltPath$s/*")
+                fi
+            # ... and if it's a file we don't need to add another rule
+            #else
+            #    :
             fi
+
+            #echo "ZAK DONE"
+            break
         fi
 
         # Re-ignore its children
