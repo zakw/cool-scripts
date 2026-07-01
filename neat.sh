@@ -138,7 +138,7 @@ getSegmentsFromPattern(){
 
 # Expand our patterns into their final form
 keepPatternsProcessed=()
-keepDirectories=()
+keepDirectoryPatterns=()
 for keepPattern in "${keepPatternsCombined[@]}"; do
     # Typical path for normal patterns without "f:" or "d:" prefixes
     if [[ "$keepPattern" != *:* ]]; then
@@ -167,7 +167,10 @@ for keepPattern in "${keepPatternsCombined[@]}"; do
         echo "File: $extracted -> ${extractedSegments[*]}"
     elif [[ "$prefix" == "d" ]]; then
         echo "Folder: $extracted -> ${extractedSegments[*]}"
-        keepDirectories+=("${extracted#*(/)}")
+
+        # Trim leading '/' that indicates top-of-repo so that we don't try to
+        # create a directory in the root of the filesystem.
+        keepDirectoryPatterns+=("${extracted#*(/)}")
     else
         echo "Error: Unknown prefix \"$prefix\"" >&2
         exit 1
@@ -267,5 +270,19 @@ elif [[ "$force" != "true" ]]; then
 #else
 fi
 
+# Capture any directories that will be cleaned that we want to remain
+keepDirectories=()
+repoRoot=$(git rev-parse --show-toplevel)
+for dirPattern in "${keepDirectoryPatterns[@]}"; do
+
+    readarray -d '' keepDirectories < <(find "$repoRoot" -type d -name "$dirPattern")
+done
+
 # Add git clean's force flags (two "f"s descend into submodules, too)
 cleanWithFlags "$forceFlags" "$showCommand" "${keepPatternArgs[@]}"
+
+# Recreate any directories that no longer exist
+for d in "${keepDirectories[@]}"; do
+    echo "Would recreate \"$d\""
+    #mkdir -p "$d"
+done
