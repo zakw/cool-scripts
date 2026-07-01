@@ -170,10 +170,11 @@ for keepPattern in "${keepPatternsCombined[@]}"; do
 
         #echo "Folder: $extracted -> ${extractedSegments[*]}"
 
-        dirPrefix=""
+        # For find, try to match everything from here by default
+        dirPrefix="$repoRoot/*"
         if [[ "$extracted" == /* ]]; then
             # Add this for find so only patterns starting in the repo root match
-            dirPrefix="./"
+            dirPrefix="$repoRoot/"
         fi
 
         # Trim leading '/' that indicates top-of-repo so that we don't try to
@@ -249,11 +250,13 @@ cleanWithFlags(){
 keepDirectories=()
 repoRoot=$(git rev-parse --show-toplevel)
 for dirPattern in "${keepDirectoryPatterns[@]}"; do
-    #echo "dirPattern=\"$dirPattern\""
+    echo "dirPattern=\"$dirPattern\""
     keepDirs=()
     readarray -d '' keepDirs < <(find "$repoRoot" -type d -path "$dirPattern" -print0)
     keepDirectories+=("${keepDirs[@]}")
 done
+
+#echo "keepDirectories -> ${keepDirectories[*]}"
 
 # Recreate any directories that no longer exist
 for d in "${keepDirectories[@]}"; do
