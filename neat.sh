@@ -185,6 +185,11 @@ for keepPattern in "${keepPatternsCombined[@]}"; do
         # Trim trailing '/' because find will fail on it otherwise
         extracted="${extracted%/}"
 
+        if [[ -z "$extracted" ]]; then
+            echo "Error: Empty pattern \"$extracted\"" >&2
+            exit 1
+        fi
+
         recreateDirectoryPatterns+=("$dirPrefix$extracted")
     else
         echo "Error: Unknown prefix \"$prefix\"" >&2
@@ -198,17 +203,24 @@ for keepPattern in "${keepPatternsCombined[@]}"; do
     fi
 
     # Alternatively include and exclude our ancestry hierarchy to rebuild the path to our desired keep item
-    negation="!"
     rebuiltPath=""
     for s in "${extractedSegments[@]}"; do
-        keepPatternsDirectoryAncestry+=("$negation$rebuiltPath$s")
-        rebuiltPath="$rebuiltPath$s"
 
-        if [[ "$negation" == "!" ]]; then
-            negation=""
-        else
-            negation="!"
+        # Unignore this folder
+        keepPatternsDirectoryAncestry+=("!$rebuiltPath$s")
+
+        # If this is a file and we've reconstructed the whole path, we don't need to add a rule for non-existant children
+        if [[ "$prefix" == "f" ]]; then
+            if [[ "$rebuiltPath$s" == "$extracted" ]]; then
+                #echo "ZAK DONE"
+                break
+            fi
         fi
+
+        # Re-ignore its children
+        keepPatternsDirectoryAncestry+=("$rebuiltPath$s/*")
+
+        rebuiltPath="$rebuiltPath$s"
     done
 done
 
